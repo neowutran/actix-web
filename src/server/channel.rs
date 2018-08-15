@@ -103,7 +103,7 @@ where
                             n.remove()
                         };
                     }
-                    _ => (),
+                    Ok(a) => println!("H1 {:?}", a),
                 }
                 return result;
             }
@@ -115,7 +115,7 @@ where
                             n.remove()
                         };
                     }
-                    _ => (),
+                    Ok(a) => println!("H2 {:?}", a),
                 }
                 return result;
             }
@@ -128,7 +128,7 @@ where
                         };
                         return Err(());
                     }
-                    _ => (),
+                    Ok(a) => println!("unknown {:?}", a),
                 }
 
                 if buf.len() >= 14 {
