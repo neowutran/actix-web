@@ -12,6 +12,7 @@ use resource::Resource;
 use router::{ResourceDef, Router};
 use scope::Scope;
 use server::{HttpHandler, HttpHandlerTask, IntoHttpHandler, Request};
+use with::WithFactory;
 
 /// Application
 pub struct HttpApplication<S = ()> {
@@ -249,7 +250,7 @@ where
     /// ```
     pub fn route<T, F, R>(mut self, path: &str, method: Method, f: F) -> App<S>
     where
-        F: Fn(T) -> R + 'static,
+        F: WithFactory<T, S, R>,
         R: Responder + 'static,
         T: FromRequest<S> + 'static,
     {
@@ -775,8 +776,7 @@ mod tests {
             .route("/test", Method::GET, |_: HttpRequest| HttpResponse::Ok())
             .route("/test", Method::POST, |_: HttpRequest| {
                 HttpResponse::Created()
-            })
-            .finish();
+            }).finish();
 
         let req = TestRequest::with_uri("/test").method(Method::GET).request();
         let resp = app.run(req);

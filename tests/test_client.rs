@@ -5,6 +5,8 @@ extern crate bytes;
 extern crate flate2;
 extern crate futures;
 extern crate rand;
+#[cfg(all(unix, feature = "uds"))]
+extern crate tokio_uds;
 
 use std::io::Read;
 
@@ -116,8 +118,7 @@ fn test_client_gzip_encoding() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Deflate)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -146,8 +147,7 @@ fn test_client_gzip_encoding_large() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Deflate)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -179,8 +179,7 @@ fn test_client_gzip_encoding_large_random() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Deflate)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -198,6 +197,13 @@ fn test_client_gzip_encoding_large_random() {
     assert_eq!(bytes, Bytes::from(data));
 }
 
+#[cfg(all(unix, feature = "uds"))]
+#[test]
+fn test_compatible_with_unix_socket_stream() {
+    let (stream, _) = tokio_uds::UnixStream::pair().unwrap();
+    let _ = client::Connection::from_stream(stream);
+}
+
 #[cfg(feature = "brotli")]
 #[test]
 fn test_client_brotli_encoding() {
@@ -208,8 +214,7 @@ fn test_client_brotli_encoding() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Gzip)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -242,8 +247,7 @@ fn test_client_brotli_encoding_large_random() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Gzip)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -272,8 +276,7 @@ fn test_client_deflate_encoding() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Br)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -306,8 +309,7 @@ fn test_client_deflate_encoding_large_random() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Br)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -336,8 +338,7 @@ fn test_client_streaming_explicit() {
                         .chunked()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(body))
-                })
-                .responder()
+                }).responder()
         })
     });
 

@@ -66,6 +66,8 @@
 //! * `tls` - enables ssl support via `native-tls` crate
 //! * `alpn` - enables ssl support via `openssl` crate, require for `http/2`
 //!    support
+//! * `uds` - enables support for making client requests via Unix Domain Sockets.
+//!   Unix only. Not necessary for *serving* requests.
 //! * `session` - enables session support, includes `ring` crate as
 //!   dependency
 //! * `brotli` - enables `brotli` compression support, requires `c`
@@ -120,6 +122,8 @@ extern crate tokio_io;
 extern crate tokio_reactor;
 extern crate tokio_tcp;
 extern crate tokio_timer;
+#[cfg(all(unix, feature = "uds"))]
+extern crate tokio_uds;
 extern crate url;
 #[macro_use]
 extern crate serde;
@@ -130,6 +134,7 @@ extern crate encoding;
 extern crate flate2;
 extern crate h2 as http2;
 extern crate num_cpus;
+extern crate serde_urlencoded;
 #[macro_use]
 extern crate percent_encoding;
 extern crate serde_json;
@@ -143,6 +148,8 @@ extern crate serde_derive;
 
 #[cfg(feature = "tls")]
 extern crate native_tls;
+#[cfg(feature = "tls")]
+extern crate tokio_tls;
 
 #[cfg(feature = "openssl")]
 extern crate openssl;
@@ -180,7 +187,6 @@ mod resource;
 mod route;
 mod router;
 mod scope;
-mod serde_urlencoded;
 mod uri;
 mod with;
 
@@ -251,12 +257,13 @@ pub mod dev {
     pub use context::Drain;
     pub use extractor::{FormConfig, PayloadConfig};
     pub use handler::{AsyncResult, Handler};
-    pub use httpmessage::{MessageBody, UrlEncoded};
+    pub use httpmessage::{MessageBody, Readlines, UrlEncoded};
     pub use httpresponse::HttpResponseBuilder;
     pub use info::ConnectionInfo;
     pub use json::{JsonBody, JsonConfig};
     pub use param::{FromParam, Params};
     pub use payload::{Payload, PayloadBuffer};
+    pub use pipeline::Pipeline;
     pub use resource::Resource;
     pub use route::Route;
     pub use router::{ResourceDef, ResourceInfo, ResourceType, Router};
@@ -278,7 +285,9 @@ pub mod http {
     /// Various http headers
     pub mod header {
         pub use header::*;
-        pub use header::{ContentDisposition, DispositionType, DispositionParam, Charset, LanguageTag};
+        pub use header::{
+            Charset, ContentDisposition, DispositionParam, DispositionType, LanguageTag,
+        };
     }
     pub use header::ContentEncoding;
     pub use httpresponse::ConnectionType;

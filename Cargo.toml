@@ -32,13 +32,16 @@ path = "src/lib.rs"
 default = ["session", "brotli", "flate2-c"]
 
 # tls
-tls = ["native-tls"]
+tls = ["native-tls", "tokio-tls"]
 
 # openssl
 alpn = ["openssl", "tokio-openssl"]
 
 # rustls
 rust-tls = ["rustls", "tokio-rustls", "webpki", "webpki-roots"]
+
+# unix sockets
+uds = ["tokio-uds"]
 
 # sessions feature, session require "ring" crate and c compiler
 session = ["cookie/secure"]
@@ -101,20 +104,22 @@ tokio-reactor = "0.1"
 
 # native-tls
 native-tls = { version="0.2", optional = true }
+tokio-tls = { version="0.2", optional = true }
 
 # openssl
 openssl = { version="0.10", optional = true }
 tokio-openssl = { version="0.2", optional = true }
 
 #rustls
-rustls = { version = "0.13", optional = true }
-tokio-rustls = { version = "0.7", optional = true }
+rustls = { version = "^0.13.1", optional = true }
+tokio-rustls = { version = "^0.7.2", optional = true }
 webpki = { version = "0.18", optional = true }
 webpki-roots = { version = "0.15", optional = true }
 
-# forked url_encoded
-itoa = "0.4"
-dtoa = "0.4"
+# unix sockets
+tokio-uds = { version="0.2", optional = true }
+
+serde_urlencoded = "^0.5.3"
 
 [dev-dependencies]
 env_logger = "0.5"

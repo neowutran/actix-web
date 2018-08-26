@@ -13,8 +13,8 @@ extern crate tokio_reactor;
 extern crate tokio_tcp;
 
 use std::io::{Read, Write};
-use std::sync::{mpsc, Arc};
-use std::{net, thread, time};
+use std::sync::Arc;
+use std::{thread, time};
 
 #[cfg(feature = "brotli")]
 use brotli2::write::{BrotliDecoder, BrotliEncoder};
@@ -32,7 +32,6 @@ use tokio::executor::current_thread;
 use tokio::runtime::current_thread::Runtime;
 use tokio_tcp::TcpStream;
 
-use actix::System;
 use actix_web::*;
 
 const STR: &str = "Hello World Hello World Hello World Hello World Hello World \
@@ -60,6 +59,9 @@ const STR: &str = "Hello World Hello World Hello World Hello World Hello World \
 #[test]
 #[cfg(unix)]
 fn test_start() {
+    use actix::System;
+    use std::sync::mpsc;
+
     let _ = test::TestServer::unused_addr();
     let (tx, rx) = mpsc::channel();
 
@@ -117,6 +119,10 @@ fn test_start() {
 #[test]
 #[cfg(unix)]
 fn test_shutdown() {
+    use actix::System;
+    use std::net;
+    use std::sync::mpsc;
+
     let _ = test::TestServer::unused_addr();
     let (tx, rx) = mpsc::channel();
 
@@ -156,6 +162,9 @@ fn test_shutdown() {
 #[test]
 #[cfg(unix)]
 fn test_panic() {
+    use actix::System;
+    use std::sync::mpsc;
+
     let _ = test::TestServer::unused_addr();
     let (tx, rx) = mpsc::channel();
 
@@ -167,8 +176,7 @@ fn test_panic() {
                         r.method(http::Method::GET).f(|_| -> &'static str {
                             panic!("error");
                         });
-                    })
-                    .resource("/", |r| {
+                    }).resource("/", |r| {
                         r.method(http::Method::GET).f(|_| HttpResponse::Ok())
                     })
             }).workers(1);
@@ -619,8 +627,7 @@ fn test_gzip_encoding() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -652,8 +659,7 @@ fn test_gzip_encoding_large() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -689,8 +695,7 @@ fn test_reading_gzip_encoding_large_random() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -722,8 +727,7 @@ fn test_reading_deflate_encoding() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -755,8 +759,7 @@ fn test_reading_deflate_encoding_large() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -792,8 +795,7 @@ fn test_reading_deflate_encoding_large_random() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -826,8 +828,7 @@ fn test_brotli_encoding() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -860,8 +861,7 @@ fn test_brotli_encoding_large() {
                     Ok(HttpResponse::Ok()
                         .content_encoding(http::ContentEncoding::Identity)
                         .body(bytes))
-                })
-                .responder()
+                }).responder()
         })
     });
 
@@ -937,14 +937,23 @@ fn test_server_cookies() {
     use actix_web::http;
 
     let mut srv = test::TestServer::with_factory(|| {
-        App::new().resource("/", |r| r.f(|_| HttpResponse::Ok().cookie(http::CookieBuilder::new("first", "first_value").http_only(true).finish())
-                                                               .cookie(http::Cookie::new("second", "first_value"))
-                                                               .cookie(http::Cookie::new("second", "second_value"))
-                                                               .finish())
-        )
+        App::new().resource("/", |r| {
+            r.f(|_| {
+                HttpResponse::Ok()
+                    .cookie(
+                        http::CookieBuilder::new("first", "first_value")
+                            .http_only(true)
+                            .finish(),
+                    ).cookie(http::Cookie::new("second", "first_value"))
+                    .cookie(http::Cookie::new("second", "second_value"))
+                    .finish()
+            })
+        })
     });
 
-    let first_cookie = http::CookieBuilder::new("first", "first_value").http_only(true).finish();
+    let first_cookie = http::CookieBuilder::new("first", "first_value")
+        .http_only(true)
+        .finish();
     let second_cookie = http::Cookie::new("second", "second_value");
 
     let request = srv.get().finish().unwrap();
@@ -963,10 +972,12 @@ fn test_server_cookies() {
     let first_cookie = first_cookie.to_string();
     let second_cookie = second_cookie.to_string();
     //Check that we have exactly two instances of raw cookie headers
-    let cookies = response.headers().get_all(http::header::SET_COOKIE)
-                                    .iter()
-                                    .map(|header| header.to_str().expect("To str").to_string())
-                                    .collect::<Vec<_>>();
+    let cookies = response
+        .headers()
+        .get_all(http::header::SET_COOKIE)
+        .iter()
+        .map(|header| header.to_str().expect("To str").to_string())
+        .collect::<Vec<_>>();
     assert_eq!(cookies.len(), 2);
     if cookies[0] == first_cookie {
         assert_eq!(cookies[1], second_cookie);

@@ -31,6 +31,10 @@ use super::{
 };
 
 /// An HTTP Server
+///
+/// By default it serves HTTP2 when HTTPs is enabled,
+/// in order to change it, use `ServerFlags` that can be provided
+/// to acceptor service.
 pub struct HttpServer<H>
 where
     H: IntoHttpHandler + 'static,
@@ -171,11 +175,11 @@ where
     }
 
     /// Disable `HTTP/2` support
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use acceptor service with proper ServerFlags parama"
-    )]
+    // #[doc(hidden)]
+    // #[deprecated(
+    //     since = "0.7.4",
+    //     note = "please use acceptor service with proper ServerFlags parama"
+    // )]
     pub fn no_http2(mut self) -> Self {
         self.no_http2 = true;
         self
@@ -213,6 +217,7 @@ where
         self
     }
 
+    #[doc(hidden)]
     /// Use listener for accepting incoming connection requests
     pub fn listen_with<A>(mut self, lst: net::TcpListener, acceptor: A) -> Self
     where
@@ -230,11 +235,6 @@ where
     }
 
     #[cfg(feature = "tls")]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use `actix_web::HttpServer::listen_with()` and `actix_web::server::NativeTlsAcceptor` instead"
-    )]
     /// Use listener for accepting incoming tls connection requests
     ///
     /// HttpServer does not change any configuration for TcpListener,
@@ -246,11 +246,6 @@ where
     }
 
     #[cfg(feature = "alpn")]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use `actix_web::HttpServer::listen_with()` and `actix_web::server::OpensslAcceptor` instead"
-    )]
     /// Use listener for accepting incoming tls connection requests
     ///
     /// This method sets alpn protocols to "h2" and "http/1.1"
@@ -270,11 +265,6 @@ where
     }
 
     #[cfg(feature = "rust-tls")]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use `actix_web::HttpServer::listen_with()` and `actix_web::server::RustlsAcceptor` instead"
-    )]
     /// Use listener for accepting incoming tls connection requests
     ///
     /// This method sets alpn protocols to "h2" and "http/1.1"
@@ -309,6 +299,7 @@ where
     }
 
     /// Start listening for incoming connections with supplied acceptor.
+    #[doc(hidden)]
     #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
     pub fn bind_with<S, A>(mut self, addr: S, acceptor: A) -> io::Result<Self>
     where
@@ -361,11 +352,6 @@ where
     }
 
     #[cfg(feature = "tls")]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use `actix_web::HttpServer::bind_with()` and `actix_web::server::NativeTlsAcceptor` instead"
-    )]
     /// The ssl socket address to bind
     ///
     /// To bind multiple addresses this method can be called multiple times.
@@ -378,11 +364,6 @@ where
     }
 
     #[cfg(feature = "alpn")]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use `actix_web::HttpServer::bind_with()` and `actix_web::server::OpensslAcceptor` instead"
-    )]
     /// Start listening for incoming tls connections.
     ///
     /// This method sets alpn protocols to "h2" and "http/1.1"
@@ -403,11 +384,6 @@ where
     }
 
     #[cfg(feature = "rust-tls")]
-    #[doc(hidden)]
-    #[deprecated(
-        since = "0.7.4",
-        note = "please use `actix_web::HttpServer::bind_with()` and `actix_web::server::RustlsAcceptor` instead"
-    )]
     /// Start listening for incoming tls connections.
     ///
     /// This method sets alpn protocols to "h2" and "http/1.1"
@@ -427,19 +403,24 @@ where
     }
 }
 
-impl<H: IntoHttpHandler> Into<(Box<Service>, Vec<(Token, net::TcpListener)>)> for HttpServer<H> {
+impl<H: IntoHttpHandler> Into<(Box<Service>, Vec<(Token, net::TcpListener)>)>
+    for HttpServer<H>
+{
     fn into(mut self) -> (Box<Service>, Vec<(Token, net::TcpListener)>) {
         let sockets: Vec<_> = mem::replace(&mut self.sockets, Vec::new())
             .into_iter()
             .map(|item| (item.token, item.lst))
             .collect();
 
-        (Box::new(HttpService {
-            factory: self.factory,
-            host: self.host,
-            keep_alive: self.keep_alive,
-            handlers: self.handlers,
-        }), sockets)
+        (
+            Box::new(HttpService {
+                factory: self.factory,
+                host: self.host,
+                keep_alive: self.keep_alive,
+                handlers: self.handlers,
+            }),
+            sockets,
+        )
     }
 }
 
