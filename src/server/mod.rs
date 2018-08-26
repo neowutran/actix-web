@@ -400,7 +400,7 @@ pub trait IoStream: AsyncRead + AsyncWrite + 'static {
                 match self.read(buf.bytes_mut()) {
                     Ok(n) => {
                         if n == 0 {
-                            return Ok(Async::Ready(!read_some));
+                            return Ok(Async::Ready(true));
                         } else {
                             read_some = true;
                             buf.advance_mut(n);
